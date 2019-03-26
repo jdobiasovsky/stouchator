@@ -1,0 +1,9 @@
+{
+    "paths": {
+        "inputdir": "./stouchator/input/",
+        "outputdir": "/mnt/publish/output/",
+        "ocrinput": "/mnt/ocrserver/ocr_in/",
+        "ocroutput": "/mnt/ocrserver/ocr_out/"
+    },
+    "_comment": "This is a sample file, make sure you rename it to config.json"
+}
