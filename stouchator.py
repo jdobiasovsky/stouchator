@@ -1,45 +1,60 @@
-from modules import logger, fileoperations, config
+#!/usr/bin/python
+"""
+Python script for loading large batches of documents to OCR recogniton server.
+
+No extra libraries needed, tested on python 3.7.1
+You can specify input and output paths into config.json file. See sample.
+"""
+
 import os
 import shutil
 import time
-
-# Start logger
-log = logger.setup_custom_logger('stouchator')
-log.info('Starting new run')
-
-# Create queue ready for input
-ocrqueue = fileoperations.FileQueue()
-
-# Load configuration with paths to folders
-configuration = config.ConfigurationProperties()
+from modules import logger, fileoperations, config
 
 
-# Load all files in input folder to queue
-# TODO create limit to prevent clogging
-# TODO add multithreading so files can be done simultaneously with ocr process
-for file in os.listdir(configuration.getinputdir()):
-    ocrfile = fileoperations.OcrFile(file, configuration.getinputdir())
-    ocrqueue.enqueue(item=ocrfile)
+def main():
+    """Create a queue and oversees picking up finished ocr."""
+    # Start logger
+    log = logger.setup_custom_logger('stouchator')
+    log.info('Starting new run')
 
-# start processing until queue is is empty
-while ocrqueue.isempty() is False:
-    currentitem = ocrqueue.getfront()
-    log.info('Sending {} to OCR input'.format(ocrqueue.getfront().name))
-    shutil.copy(currentitem.fullpath(), configuration.getocrinput())
+    # Create queue ready for input
+    ocrqueue = fileoperations.FileQueue()
+    log.info('Started a new queue')
 
-    timer_start = time.time()
-    log.info('Waiting for OCR to finish')
-    # wait until the file is done before loading another
-    while currentitem.name not in os.listdir(configuration.getocroutput()):
-        time.sleep(2)
-        # TODO prevent waiting too long for ocr to finish
-    timer_stop = time.time()
-    elapsedtime = round(timer_stop-timer_start, 2)
-    log.info('Done, total time elapsed: {}'.format(elapsedtime))
+    # Load configuration with paths to folders
+    configuration = config.ConfigurationProperties()
 
-    # update item path and make backup
-    currentitem.path = configuration.getocroutput()
-    shutil.copy(currentitem.fullpath(), configuration.getoutputdir())
-    ocrqueue.dequeue()
+    # Load all files in input folder to queue
+    # TODO create limit to prevent clogging
+    # TODO add multithreading so files can be done simultaneously with ocr
+    for file in os.listdir(configuration.getinputdir()):
+        ocrfile = fileoperations.OcrFile(file, configuration.getinputdir())
+        ocrqueue.enqueue(item=ocrfile)
 
-print('Run finished...')
+    # start processing until queue is is empty
+    while ocrqueue.isempty() is False:
+        currentitem = ocrqueue.getfront()
+        log.info('Sending %s to OCR input', ocrqueue.getfront().name)
+        shutil.copy(currentitem.fullpath(), configuration.getocrinput())
+
+        timer_start = time.time()
+        log.info('Waiting for OCR to finish')
+        # wait until the file is done before loading another
+        while currentitem.name not in os.listdir(configuration.getocroutput()):
+            time.sleep(2)
+            # TODO prevent waiting too long for ocr to finish
+        timer_stop = time.time()
+        elapsedtime = round(timer_stop-timer_start, 2)
+        log.info('Done, total time elapsed: %s', elapsedtime)
+
+        # update item path and make backup
+        currentitem.path = configuration.getocroutput()
+        shutil.copy(currentitem.fullpath(), configuration.getoutputdir())
+        ocrqueue.dequeue()
+
+    print('Run finished...')
+
+
+if __name__ == '__main__':
+    main()
