@@ -43,7 +43,13 @@ def main():
         # wait until the file is done before loading another
         while currentitem.name not in os.listdir(configuration.getocroutput()):
             time.sleep(2)
-            # TODO prevent waiting too long for ocr to finish
+            timer_stop = time.time()
+            if (timer_stop-timer_start) > 1200:
+                log.warning('File %s is taking too long to finish',
+                            ocrqueue.getfront().name)
+                log.warning('Assuming server error or out of license.')
+                exit()
+
         timer_stop = time.time()
         elapsedtime = round(timer_stop-timer_start, 2)
         log.info('Done, total time elapsed: %s', elapsedtime)
